@@ -1,0 +1,157 @@
+/*
+ *
+ */
+#ifndef GLEX_H
+#define GLEX_H
+
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+#define GLEX_VERSION_MAJOR ${PROJECT_VERSION_MAJOR}
+#define GLEX_VERSION_MINOR ${PROJECT_VERSION_MINOR}
+#define GLEX_VERSION_PATCH ${PROJECT_VERSION_PATCH}
+
+#cmakedefine GLEX_SHARED
+#cmakedefine GLEX_DEBUG
+
+#ifdef __cplusplus
+#	define GLEX_BEGIN_DECLS extern "C" {
+#	define GLEX_END_DECLS }
+#else
+#	define GLEX_BEGIN_DECLS
+#	define GLEX_END_DECLS
+#endif
+
+#if defined(_MSC_VER)
+#	define GLEX_DECL_EXPORT __declspec(dllexport)
+#	define GLEX_DECL_IMPORT __declspec(dllimport)
+#elif defined(__GNUC__)
+#	define GLEX_DECL_EXPORT
+#	define GLEX_DECL_IMPORT
+#else
+#	error unknown compiler.
+#endif
+
+#ifdef GLEX_SHARED
+#	ifdef GLEX
+#		define GLEX_API GLEX_DECL_EXPORT
+#	else
+#		define GLEX_API GLEX_DECL_IMPORT
+#	endif
+#else
+#	define GLEX_API
+#endif
+
+#define GLEX_CONCAT(a, b) GLEX_CONCAT_(a, b)
+#define GLEX_CONCAT_(a, b) a ## b
+
+#define GLEX_STRIZE(x) GLEX_STRIZE_(x)
+#define GLEX_STRIZE_(x) #x
+
+#define GLEX_VERSION_STR \
+	GLEX_STRIZE(GLEX_VERSION_MAJOR) "." \
+	GLEX_STRIZE(GLEX_VERSION_MINOR) "." \
+	GLEX_STRIZE(GLEX_VERSION_PATCH)
+
+GLEX_BEGIN_DECLS
+
+typedef struct {
+	int major;
+	int minor;
+	int patch;
+} GLEXVersion;
+
+typedef enum {
+	GLEX_LIGHT_TYPE_DIRECTIONAL = 0,
+	GLEX_LIGHT_TYPE_POINT,
+	GLEX_LIGHT_TYPE_SPOT,
+	GLEX_LIGHT_TYPE_MAX,
+	GLEX_LIGHT_TYPE_INVALID = -1
+} GLEXLightType;
+
+typedef enum {
+	GLEX_SPOT_LIGHT_SHAPE_CYCLE = 0,
+	GLEX_SPOT_LIGHT_SHAPE_RECTANGLE,
+	GLEX_SPOT_LIGHT_SHAPE_TRIANGLE,
+	GLEX_SPOT_LIGHT_SHAPE_MAX,
+	GLEX_SPOT_LIGHT_SHAPE_INVALID = -1
+} GLEXSpotLightShape;
+
+typedef enum {
+	GLEX_MESH_TYPE_STATIC = 0,
+	GLEX_MESH_TYPE_DYNAMIC,
+	GLEX_MESH_TYPE_MAX,
+	GLEX_MESH_TYPE_INVALID = -1
+} GLEXMeshType;
+
+typedef struct {
+	struct { float x, y, z; } position;
+	struct { float r, g, b; } color;
+	struct { float u, v; } texCoord;
+	float __align;
+} GLEXVertex;
+
+typedef uint32_t GLEXVertexIndex;
+
+typedef struct GLEXContext_ GLEXContext;
+typedef struct GLEXLight_ GLEXLight;
+typedef struct GLEXMaterial_ GLEXMaterial;
+typedef struct GLEXMesh_ GLEXMesh;
+
+typedef void *(*GLEXGetProcAddressProc)(const char *name);
+
+typedef struct {
+	GLEXGetProcAddressProc getProc;
+	size_t transformStackSize;
+} GLEXConfig;
+
+GLEX_API GLEXContext *glexCreateContext(const GLEXConfig *config);
+GLEX_API GLEXContext *glexCurrentContext(void);
+GLEX_API void glexDeleteContext(GLEXContext *context);
+GLEX_API void glexMakeCurrent(GLEXContext *context);
+
+GLEX_API const GLEXVersion *glexGetVersion(void);
+GLEX_API void glexBeginFrame(int width, int height);
+GLEX_API void glexEndFrame(void);
+
+GLEX_API void glexPrespective(float fov, float ratio, float nearPlane, float farPlane);
+
+GLEX_API void glexLookAt(
+	float eyeX, float eyeY, float eyeZ,
+	float centerX, float centerY, float centerZ,
+	float upX, float upY, float upZ);
+
+GLEX_API void glexResetTransform(void);
+GLEX_API void glexPushTransform(void);
+GLEX_API void glexPopTransform(void);
+GLEX_API void glexTranslate(float x, float y, float z);
+GLEX_API void glexScale(float x, float y, float z);
+GLEX_API void glexRotate(float angle, float x, float y, float z);
+
+GLEX_API GLEXLight *glexCreateLight(void);
+GLEX_API void glexDeleteLight(GLEXLight *light);
+GLEX_API void glexBindLight(GLEXLight *light);
+GLEX_API void glexLightType(GLEXLightType type);
+GLEX_API void glexLightColor(GLEXLight *light, float red, float green, float blue);
+GLEX_API void glexLightDirection(float x, float y, float z);
+GLEX_API void glexLightRange(float v);
+GLEX_API void glexSpotLightShape(GLEXSpotLightShape shape);
+GLEX_API void glexAddLight(void);
+
+GLEX_API GLEXMaterial *glexCreateMaterial(void);
+GLEX_API void glexDeleteMaterial(GLEXMaterial *material);
+GLEX_API void glexBindMaterial(GLEXMaterial *material);
+
+GLEX_API GLEXMesh *glexCreateMesh(GLEXMeshType type);
+GLEX_API void glexDeleteMesh(GLEXMesh *mesh);
+GLEX_API void glexBindMesh(GLEXMesh *mesh);
+GLEX_API void glexVertexData(const GLEXVertex *p, size_t count);
+GLEX_API void glexVertexIndexData(const GLEXVertexIndex *p, size_t count);
+GLEX_API GLEXVertex *glexMapVertexBuffer(size_t offset, size_t count);
+GLEX_API GLEXVertexIndex *glexMapVertexIndexBuffer(size_t offset, size_t count);
+GLEX_API void glexAddMesh(void);
+
+GLEX_END_DECLS
+
+#endif /* GLEX_H */
